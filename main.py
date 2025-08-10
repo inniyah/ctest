@@ -27,6 +27,12 @@ from PyQt5 import Qt, QtGui, QtWidgets, QtCore
 
 UiMainWindow, QMainWindow = loadUiType(os.path.join(MY_PATH, 'mainwin.ui'))
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+from spinner import WaitingSpinner
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 # https://stackoverflow.com/questions/57584560/how-to-clear-the-text-of-qtextedit-and-immediately-insert-new-text
 class Stream(QtCore.QObject):
     newText = QtCore.pyqtSignal(str)
@@ -42,12 +48,12 @@ class MainWindow(UiMainWindow, QMainWindow):
     def __init__(self, args):
         self.exit_now = False
         self.show_log = True
+        self.blocked_ui = False
 
         try:
             super(MainWindow, self).__init__()
             self.setupUi(self)
             self.setWindowTitle("Main Window")
-
 
             # Setup logging in GUI (if enabled)
             if self.show_log:
@@ -76,6 +82,8 @@ class MainWindow(UiMainWindow, QMainWindow):
                 self.log.clear()
                 self.log.hide()
 
+            # Configure a loading spinner to indicate ongoing background tasks (if enabled)
+            self.spinner = WaitingSpinner(self, True, True, QtCore.Qt.ApplicationModal)
 
             # Set up a periodic timer, that will call self.tick every 100 ms.
             self.tick_counter = -1
@@ -91,6 +99,13 @@ class MainWindow(UiMainWindow, QMainWindow):
 
     def tick(self):
         self.tick_counter += 1
+
+        if not self.blocked_ui:
+            if self.spinner.isSpinning:
+                self.spinner.stop()
+        else:
+            if not self.spinner.isSpinning:
+                self.spinner.start()
 
         if self.exit_now:
             self.close()
