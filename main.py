@@ -12,7 +12,10 @@ faulthandler.enable()
 
 logging.basicConfig(level=logging.INFO, format="[%(levelname)s] [%(process)s/%(threadName)s:%(thread)d] [%(pathname)s:%(lineno)d] [%(asctime)s]: '%(message)s'")
 
+import json
 import signal
+import threading
+import time
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -45,6 +48,7 @@ UiMainWindow, QMainWindow = loadUiType(os.path.join(MY_PATH, 'mainwin.ui'))
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 from spinner import WaitingSpinner
+from json_viewer import JsonView
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -111,6 +115,35 @@ class MainWindow(UiMainWindow, QMainWindow):
         except Exception as e:
             logging.error(f"{type(e).__name__}: {e}")
             logging.error(traceback.format_exc())
+
+        self.load_initial_data()
+
+    def load_initial_data(self):
+        def _run(self, thread_id):
+            try:
+                time.sleep(2)
+                self.json.addTopLevelItem('something', {i: str(i) for i in range(10)})
+                logging.info('Initial Data Loaded')
+
+            except Exception as e:
+                logging.error(f"{type(e).__name__}: {e} [{sys._getframe().f_code.co_name}]")
+                logging.error(traceback.format_exc())
+                #~ logging.error(sys.exc_info()[2])
+
+            finally:
+                self.threads.pop(thread_id, None)
+
+        try:
+            thread_id = sys._getframe().f_code.co_name # Get function name ( https://www.oreilly.com/library/view/python-cookbook/0596001673/ch14s08.html )
+            logging.info(f"Creating thread: '{thread_id}'")
+            thread = threading.Thread(target=_run, args=(self, thread_id))
+            self.threads[thread_id] = thread
+            thread.start()
+
+        except Exception as e:
+            logging.error(f"{type(e).__name__}: {e} [{sys._getframe().f_code.co_name}]")
+            logging.error(traceback.format_exc())
+            #~ logging.error(sys.exc_info()[2])
 
     def tick(self):
         self.tick_counter += 1
