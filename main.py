@@ -22,6 +22,21 @@ os.chdir(MY_PATH)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+FULLSCREEN = False
+MAXIMIZED = False
+
+LOG_FILE_FORMAT = "[%(levelname)s] [%(pathname)s:%(lineno)d] [%(asctime)s] [%(name)s]: '%(message)s'"
+LOG_CONSOLE_FORMAT = "[%(pathname)s:%(lineno)d] [%(asctime)s]: '%(message)s'"
+LOG_GUI_FORMAT = "[%(levelname)s] %(message)s"
+
+LOGS_DIR       = os.path.abspath(os.path.join(MY_PATH, 'logs'))
+LOGS_MAX_SIZE  = 5000000
+LOGS_MAX_COUNT = 9
+
+DEFAULT_LOG_LEVEL = 'INFO'
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
 from PyQt5.uic import loadUiType
 from PyQt5 import Qt, QtGui, QtWidgets, QtCore
 
@@ -48,7 +63,7 @@ class MainWindow(UiMainWindow, QMainWindow):
     def __init__(self, args):
         self.exit_now = False
         self.show_log = True
-        self.blocked_ui = False
+        self.threads = { }
 
         try:
             super(MainWindow, self).__init__()
@@ -100,8 +115,12 @@ class MainWindow(UiMainWindow, QMainWindow):
     def tick(self):
         self.tick_counter += 1
 
-        if not self.blocked_ui:
-            if self.spinner.isSpinning:
+        dead_threads = [ id for id, thread in self.threads.items() if not thread.is_alive() ]
+        for thread_id in dead_threads:
+            self.threads.pop(thread_id, None)
+
+        if not self.threads:
+           if self.spinner.isSpinning:
                 self.spinner.stop()
         else:
             if not self.spinner.isSpinning:
@@ -159,19 +178,6 @@ class GracefulKiller:
         sys.exit(-1)
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-FULLSCREEN = False
-MAXIMIZED = False
-
-LOG_FILE_FORMAT = "[%(levelname)s] [%(pathname)s:%(lineno)d] [%(asctime)s] [%(name)s]: '%(message)s'"
-LOG_CONSOLE_FORMAT = "[%(pathname)s:%(lineno)d] [%(asctime)s]: '%(message)s'"
-LOG_GUI_FORMAT = "[%(levelname)s] %(message)s"
-
-LOGS_DIR       = os.path.abspath(os.path.join(MY_PATH, 'logs'))
-LOGS_MAX_SIZE  = 5000000
-LOGS_MAX_COUNT = 9
-
-DEFAULT_LOG_LEVEL = 'INFO'
 
 def main_qt():
     import argparse
